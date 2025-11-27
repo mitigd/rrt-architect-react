@@ -1,73 +1,57 @@
-# React + TypeScript + Vite
+# RRT Architect (react version)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+[Play Now](https://mitigd.github.io/rrt-architect-react/)
 
-Currently, two official plugins are available:
+## Overview
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+RRT (Relational Reasoning Training) Architect is a cognitive training application based on the principles of Relational Frame Theory (RFT). It generates procedural logic puzzles that require the user to derive relationships between abstract symbols. The application focuses on Relational Fluency—the ability to manipulate mental models and derive non-explicit relationships across different frames of reference.
 
-## React Compiler
+## Core Logic Modules
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+The application includes several distinct engines for generating relational problems:
 
-## Expanding the ESLint configuration
+  * **Linear Relation:** Generates sequences based on magnitude (Greater Than / Less Than). The user must determine the relationship between two non-adjacent items in the sequence.
+  * **Distinction:** Generates chains of identity (Same / Different). The user must track the changing truth value across multiple steps to determine if item A is the same as item Z.
+  * **Hierarchy:** Simulates containment relationships (Category A contains Category B). The user must verify if specific items belong to broader categories within a nested structure.
+  * **Spatial 2D:** Places items on a grid using cardinal directions (North, South, East, West). The user must calculate the relative position between two distant points.
+  * **Spatial 3D:** Extends the 2D grid into three dimensions, adding "Above" and "Below" axes to the relational calculation.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Advanced Mechanics
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+Users can enable specific modifiers to increase the complexity of the derivation tasks:
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+  * **Cipher Mode:** Replaces standard relational keywords (e.g., "North," "Inside," "Greater") with randomly generated nonsense words. This requires the user to learn and maintain a lexicon while performing logic operations.
+  * **Deictic Perspective:** Shifts the frame of reference from an allocentric map (top-down view) to an egocentric view. The user must calculate the location of an object relative to a specific observer's position and heading.
+  * **Path Integration (Movement):** Adds dynamic movement instructions to spatial tasks. The user must track a coordinate position and heading through a series of vector changes (e.g., "Walk 1, Turn Right") before deriving the final relationship.
+  * **Transformation (Context):** Introduces contextual cues (e.g., "Night Mode") that invert the required output. A mathematically correct "True" relationship may require a "False" input depending on the active context.
+  * **Interference:** Inserts a distractor task (color/pattern matching) between the memorization of premises and the final query to test the stability of working memory.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## Configuration and Analytics
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+The application is fully configurable, allowing users to tailor the session to specific parameters:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+  * **Blind Mode:** Hides the premises during the query phase, forcing reliance on working memory rather than visual scanning.
+  * **Symbol Types:** Toggles between Emojis, Voronoi patterns, or text-based nonsense words to vary the abstraction level.
+  * **Infinite vs. Timed:** Sessions can run indefinitely or against a countdown clock.
+  * **Analytics:** The application stores local session history, visualizing performance over time. It tracks accuracy, average reaction time, and performance relative to the "depth" (number of premises) of the problem.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## Technology
+
+  * **Framework:** Svelte
+  * **Language:** TypeScript
+  * **Visualization:** Chart.js
+  * **Storage:** LocalStorage (Persists settings and history locally in the browser)
+
+## Development
+
+To run this project locally:
+
+1.  Clone the repository.
+2.  Install dependencies:
+    ```bash
+    npm install
+    ```
+3.  Start the development server:
+    ```bash
+    npm run dev
+    ```
