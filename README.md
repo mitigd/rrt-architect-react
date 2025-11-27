@@ -37,7 +37,7 @@ The application is fully configurable, allowing users to tailor the session to s
 
 ## Technology
 
-  * **Framework:** Svelte
+  * **Framework:** React
   * **Language:** TypeScript
   * **Visualization:** Chart.js
   * **Storage:** LocalStorage (Persists settings and history locally in the browser)
