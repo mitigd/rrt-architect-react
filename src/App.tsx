@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Chart from 'chart.js/auto';
 
 // --- Theme Constants ---
@@ -165,7 +165,7 @@ interface VisualNode { id: string; x: number; y: number; z: number; label: strin
 
 export default function RftArchitect() {
     // --- State ---
-    const [isDark, setIsDark] = useState(true);
+    const [isDark] = useState(true);
     const [phase, setPhase] = useState<GamePhase>("SETUP");
 
     const [activeCipherKeys, setActiveCipherKeys] = useState<string[]>([]); 
@@ -867,7 +867,7 @@ export default function RftArchitect() {
 
     const getCipherList = () => {
         if (!settings.enableCipher) return [];
-        return Object.entries(currentCipherMap).filter(([k, v]) => activeCipherKeys.includes(k));
+        return Object.entries(currentCipherMap).filter(([k]) => activeCipherKeys.includes(k));
     };
 
     return (
@@ -1162,7 +1162,7 @@ export default function RftArchitect() {
                                                                             cy={-node.y * scale}
                                                                             r="6"
                                                                             fill={isDark ? THEME.dark.bg : THEME.light.bg}
-                                                                            stroke={i === 0 ? COMMON.accent : (i === currentVisualMap.length - 1 ? COMMON.target : COMMON.text)}
+                                                                            stroke={i === 0 ? COMMON.accent : (i === currentVisualMap.length - 1 ? COMMON.target : COMMON.dim)}
                                                                             strokeWidth="2"
                                                                         />
 
