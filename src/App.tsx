@@ -1022,9 +1022,9 @@ export default function RftArchitect() {
                                      <div className="w-full h-full p-4 flex items-center justify-center">
                                         <svg 
                                             viewBox={(() => {
-                                                const GRID_STEP = 60;
-                                                const PADDING = 80;
-                                                const MIN_DIM = 400; 
+                                                const GRID_STEP = 80; // Increased spacing
+                                                const PADDING = 100;
+                                                const MIN_DIM = 500; 
                                                 const xs = currentVisualMap.map(n => n.x * GRID_STEP);
                                                 const ys = currentVisualMap.map(n => -n.y * GRID_STEP);
                                                 let minX = Math.min(...xs);
@@ -1053,14 +1053,14 @@ export default function RftArchitect() {
                                             preserveAspectRatio="xMidYMid meet"
                                         >
                                             <defs>
-                                                <pattern id="grid-pattern" width="60" height="60" patternUnits="userSpaceOnUse">
-                                                    <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#334155" strokeWidth="0.5" />
+                                                <pattern id="grid-pattern" width="80" height="80" patternUnits="userSpaceOnUse">
+                                                    <path d="M 80 0 L 0 0 0 80" fill="none" stroke="#334155" strokeWidth="0.5" />
                                                 </pattern>
                                             </defs>
                                             <rect x="-5000" y="-5000" width="10000" height="10000" fill="url(#grid-pattern)" opacity="0.2" />
                                             {
                                                 (() => {
-                                                    const GRID_STEP = 60;
+                                                    const GRID_STEP = 80; // Match ViewBox logic
                                                     return (
                                                         <>
                                                             <polyline 
@@ -1073,30 +1073,37 @@ export default function RftArchitect() {
                                                             />
                                                             {currentVisualMap.map((node, i) => (
                                                                 <g key={i}>
+                                                                    {/* Background Circle */}
                                                                     <circle 
                                                                         cx={node.x * GRID_STEP} 
                                                                         cy={-node.y * GRID_STEP} 
-                                                                        r="16" 
-                                                                        fill="#1e293b" 
+                                                                        r="30" 
+                                                                        fill="#0f172a" 
                                                                         stroke={i === 0 ? COMMON.accent : (i === currentVisualMap.length - 1 ? COMMON.target : "#64748b")} 
-                                                                        strokeWidth="4" 
+                                                                        strokeWidth="3" 
                                                                     />
-                                                                    <text 
-                                                                        x={node.x * GRID_STEP} 
-                                                                        y={-node.y * GRID_STEP} 
-                                                                        dy=".35em" 
-                                                                        textAnchor="middle" 
-                                                                        fontSize="14" 
-                                                                        fill="white" 
-                                                                        style={{ pointerEvents: 'none', userSelect: 'none' }}
+                                                                    
+                                                                    {/* Rich HTML Content (Voronoi/Emoji) via foreignObject */}
+                                                                    <foreignObject 
+                                                                        x={(node.x * GRID_STEP) - 25} 
+                                                                        y={(-node.y * GRID_STEP) - 25} 
+                                                                        width="50" 
+                                                                        height="50"
+                                                                        style={{ overflow: 'visible' }}
                                                                     >
-                                                                        {node.label.replace(/<[^>]*>?/gm, '')}
-                                                                    </text>
+                                                                        <div 
+                                                                            xmlns="http://www.w3.org/1999/xhtml" 
+                                                                            className="w-full h-full flex items-center justify-center scale-125 text-white"
+                                                                            dangerouslySetInnerHTML={{ __html: node.label }}
+                                                                        />
+                                                                    </foreignObject>
+
+                                                                    {/* Z-Axis Label */}
                                                                     {node.z !== 0 && (
                                                                         <text 
-                                                                            x={(node.x * GRID_STEP) + 18} 
-                                                                            y={(-node.y * GRID_STEP) - 10} 
-                                                                            fontSize="12" 
+                                                                            x={(node.x * GRID_STEP) + 25} 
+                                                                            y={(-node.y * GRID_STEP) - 25} 
+                                                                            fontSize="14" 
                                                                             fill="#94a3b8" 
                                                                             fontWeight="bold"
                                                                         >
@@ -1223,6 +1230,32 @@ export default function RftArchitect() {
                             </label>
                         ))}
                      </div>
+                 </section>
+
+                 {/* Visual Style */}
+                 <section>
+                    <h3 className="text-xs font-bold text-pink-500 mb-3 uppercase tracking-wider">Visual Style</h3>
+                    <div className="p-3 bg-slate-800/30 rounded border border-transparent hover:border-slate-700 transition">
+                        <label className="text-sm font-bold text-slate-300 block mb-2">Symbol Type</label>
+                        <div className="grid grid-cols-2 gap-2">
+                            {(["EMOJI", "WORDS", "VORONOI", "MIXED"] as SymbolMode[]).map((mode) => (
+                                <button
+                                    key={mode}
+                                    onClick={() => setSettings({ ...settings, symbolMode: mode })}
+                                    className={`px-3 py-2 rounded text-xs font-bold transition-all border ${
+                                        settings.symbolMode === mode
+                                            ? "bg-pink-500/20 text-pink-400 border-pink-500/50"
+                                            : "bg-slate-900 text-slate-400 border-slate-700 hover:bg-slate-800"
+                                    }`}
+                                >
+                                    {mode === "EMOJI" && "EMOJIS 🚀"}
+                                    {mode === "WORDS" && "WORDS (KIV)"}
+                                    {mode === "VORONOI" && "SHAPES ⬡"}
+                                    {mode === "MIXED" && "MIXED 🎲"}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                  </section>
 
                  {/* Modifiers */}
