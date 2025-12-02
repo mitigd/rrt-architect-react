@@ -95,6 +95,20 @@ const CIPHER_WORDS = [
 // --- Helper Functions ---
 function shuffleArray<T>(array: T[]): T[] { return [...array].sort(() => Math.random() - 0.5); }
 
+function invertSpatial(rel: string): string {
+  const map: Record<string, string> = {
+    "NORTH": "SOUTH", "SOUTH": "NORTH",
+    "EAST": "WEST", "WEST": "EAST",
+    "ABOVE": "BELOW", "BELOW": "ABOVE",
+    "LEFT": "RIGHT", "RIGHT": "LEFT",
+    "FRONT": "BEHIND", "BEHIND": "FRONT",
+    "SAME LOCATION": "SAME LOCATION"
+  };
+  // Handle combined strings like "NORTH and WEST"
+  if (rel.includes(" and ")) return rel.split(" and ").map(p => map[p] || p).join(" and ");
+  return map[rel] || rel;
+}
+
 function getDistinctRandomIndices(count: number): [number, number] {
   let a = Math.floor(Math.random() * count);
   let b = Math.floor(Math.random() * count);
@@ -306,7 +320,7 @@ export default function RftArchitect() {
 
   const [currentVisualMap, setCurrentVisualMap] = useState<VisualNode[]>([]);
 
-  const generateLogic = useCallback((mode: RftMode, num: number, cipherMap: Record<string, string>) => {
+  const generateLogic = useCallback((mode: RftMode, num: number, cipherMap: Record<string, string>, isNight: boolean) => {
     let newPremises: string[] = [];
     let newQuestion = "";
     let newAnswer = false;
@@ -343,6 +357,7 @@ export default function RftArchitect() {
       const qText = getTerm(qType);
       newQuestion = `Is ${items[idxA]} ${qText} ${settings.enableCipher ? '' : 'than'} ${items[idxB]}?`;
       newAnswer = qType === "GREATER" ? (idxA < idxB) : (idxA > idxB);
+      if (isNight) newAnswer = !newAnswer; // Binary flip safe for Linear
     }
     else if (mode === "DISTINCTION") {
       const items = generateSymbols(num + 1, settings.symbolMode);
@@ -359,6 +374,7 @@ export default function RftArchitect() {
       if (!settings.enableCipher) qText = qType === "SAME" ? "the SAME as" : "DIFFERENT from";
       newQuestion = `Is ${items[idxA]} ${qText} ${items[idxB]}?`;
       newAnswer = qType === "SAME" ? (values[idxA] === values[idxB]) : (values[idxA] !== values[idxB]);
+      if (isNight) newAnswer = !newAnswer; // Binary flip safe for Distinction
     }
     else if (mode === "HIERARCHY") {
       const items = generateSymbols(num + 1, settings.symbolMode);
@@ -371,6 +387,7 @@ export default function RftArchitect() {
         newQuestion = `Does ${items[idxA]} ${getTerm("CONTAINS")} ${items[idxB]}?`;
         newAnswer = idxA < idxB;
       }
+      if (isNight) newAnswer = !newAnswer; // Binary flip safe for Hierarchy
     }
     else if (mode.includes("SPATIAL")) {
       const is3D = mode === "SPATIAL_3D";
@@ -412,9 +429,11 @@ export default function RftArchitect() {
         const myFacing = facingNames[facingDir];
         let localX = 0, localY = 0;
         if (facingDir === 0) { localX = diffX; localY = diffY; }
-        else if (facingDir === 1) { localX = -diffY; localY = diffX; }
-        else if (facingDir === 2) { localX = -diffX; localY = -diffY; }
-        else if (facingDir === 3) { localX = diffY; localY = -diffX; }
+        else if (facingDir === 1) { localX = -diffY; localY = diffX; } // East: x=dy, y=-dx? wait. standard: y+ is N. facing E (x+). local front is x+.
+            // If facing East (1): Real (1,0) should be Front. Diff(1,0). 
+            // My formula: localX = -0 = 0. localY = 1. -> Front. Correct.
+        else if (facingDir === 2) { localX = -diffX; localY = -diffY; } // South
+        else if (facingDir === 3) { localX = diffY; localY = -diffX; } // West
 
         let trueLocalRel = "";
         if (localY > 0 && Math.abs(localX) <= localY) trueLocalRel = "FRONT";
@@ -423,13 +442,22 @@ export default function RftArchitect() {
         else if (localX < 0) trueLocalRel = "LEFT";
         if (!trueLocalRel) trueLocalRel = "SAME LOCATION";
 
+        // --- SPATIAL INVERSION FIX ---
+        // If Night mode, we invert the REALITY, not just the boolean answer.
+        // If reality is BEHIND, Inversion makes effective reality FRONT.
+        const effectiveRel = isNight ? invertSpatial(trueLocalRel) : trueLocalRel;
+        
+        const possibleDirs = ["FRONT", "BEHIND", "LEFT", "RIGHT"];
+
         if (Math.random() > 0.5) {
-          newQuestion = `You are at ${items[idxMe]} facing ${getTerm(myFacing)}.<br/>Is ${items[idxTarget]} to your ${getTerm(trueLocalRel)}?`;
+          // ASK THE TRUTH (of the current context)
+          newQuestion = `You are at ${items[idxMe]} facing ${getTerm(myFacing)}.<br/>Is ${items[idxTarget]} to your ${getTerm(effectiveRel)}?`;
           newAnswer = true;
         } else {
-          const possibleDirs = ["FRONT", "BEHIND", "LEFT", "RIGHT"];
+          // ASK A LIE (of the current context)
           let fakeRaw = possibleDirs[Math.floor(Math.random() * 4)];
-          while (fakeRaw === trueLocalRel) fakeRaw = possibleDirs[Math.floor(Math.random() * 4)];
+          // It must not be the effective relation
+          while (fakeRaw === effectiveRel) fakeRaw = possibleDirs[Math.floor(Math.random() * 4)];
           newQuestion = `You are at ${items[idxMe]} facing ${getTerm(myFacing)}.<br/>Is ${items[idxTarget]} to your ${getTerm(fakeRaw)}?`;
           newAnswer = false;
         }
@@ -472,18 +500,30 @@ export default function RftArchitect() {
         else if (heading === 1) { localX = relY; localY = -relX; }
         else if (heading === 2) { localX = -relX; localY = -relY; }
         else if (heading === 3) { localX = -relY; localY = relX; }
+        
         let trueRel = "";
         if (localY > 0 && Math.abs(localX) <= localY) trueRel = "FRONT";
         else if (localY < 0 && Math.abs(localX) <= Math.abs(localY)) trueRel = "BEHIND";
         else if (localX > 0) trueRel = "RIGHT";
         else if (localX < 0) trueRel = "LEFT";
         if (!trueRel) trueRel = "SAME LOCATION";
+
+        // --- SPATIAL INVERSION FIX ---
+        const effectiveRel = isNight ? invertSpatial(trueRel) : trueRel;
         const possibleDirs = ["FRONT", "BEHIND", "LEFT", "RIGHT"];
-        const qRaw = possibleDirs[Math.floor(Math.random() * 4)];
-        newQuestion = `${instructions.join(" ")} <br/><br/> Is ${items[targetIdx]} to your ${getTerm(qRaw)}?`;
-        newAnswer = (trueRel === qRaw);
+
+        if (Math.random() > 0.5) {
+             newQuestion = `${instructions.join(" ")} <br/><br/> Is ${items[targetIdx]} to your ${getTerm(effectiveRel)}?`;
+             newAnswer = true;
+        } else {
+             let qRaw = possibleDirs[Math.floor(Math.random() * 4)];
+             while(qRaw === effectiveRel) qRaw = possibleDirs[Math.floor(Math.random() * 4)];
+             newQuestion = `${instructions.join(" ")} <br/><br/> Is ${items[targetIdx]} to your ${getTerm(qRaw)}?`;
+             newAnswer = false;
+        }
       }
       else {
+        // STANDARD SPATIAL
         const [idxA, idxB] = getDistinctRandomIndices(items.length);
         const diffX = positions[idxB].x - positions[idxA].x;
         const diffY = positions[idxB].y - positions[idxA].y;
@@ -492,17 +532,30 @@ export default function RftArchitect() {
         if (is3D) { if (diffZ > 0) parts.push("ABOVE"); else if (diffZ < 0) parts.push("BELOW"); }
         if (diffY > 0) parts.push("NORTH"); else if (diffY < 0) parts.push("SOUTH");
         if (diffX > 0) parts.push("EAST"); else if (diffX < 0) parts.push("WEST");
-        let trueRel = "at the SAME LOCATION as";
-        if (parts.length > 0) trueRel = parts.map(p => getTerm(p)).join(" and ");
-        if (Math.random() > 0.5) {
-          newQuestion = `Is ${items[idxB]} ${trueRel} ${items[idxA]}?`;
-          newAnswer = true;
+        
+        let rawTrueRel = "SAME LOCATION";
+        if (parts.length > 0) rawTrueRel = parts.join(" and ");
+
+        // --- SPATIAL INVERSION FIX ---
+        // If night, we act as if the object is in the opposite direction
+        const effectiveParts = isNight ? parts.map(invertSpatial) : parts;
+        const allDirs = is3D ? ["NORTH", "SOUTH", "EAST", "WEST", "ABOVE", "BELOW"] : ["NORTH", "SOUTH", "EAST", "WEST"];
+        
+        // Strategy: 
+        // 50% ask about a direction that is TRUE in the effective context
+        // 50% ask about a direction that is FALSE in the effective context
+        
+        if (effectiveParts.length > 0 && Math.random() > 0.5) {
+            // Pick one of the effective true directions to ask about
+            const partToAsk = effectiveParts[Math.floor(Math.random() * effectiveParts.length)];
+            newQuestion = `Is ${items[idxB]} ${getTerm(partToAsk)} ${items[idxA]}?`;
+            newAnswer = true;
         } else {
-          const allDirs = is3D ? ["NORTH", "SOUTH", "EAST", "WEST", "ABOVE", "BELOW"] : ["NORTH", "SOUTH", "EAST", "WEST"];
-          let fakeRaw = allDirs[Math.floor(Math.random() * allDirs.length)];
-          while (parts.includes(fakeRaw)) fakeRaw = allDirs[Math.floor(Math.random() * allDirs.length)];
-          newQuestion = `Is ${items[idxB]} ${getTerm(fakeRaw)} ${items[idxA]}?`;
-          newAnswer = false;
+            // Pick a direction that is NOT in effective parts
+            let fakeRaw = allDirs[Math.floor(Math.random() * allDirs.length)];
+            while (effectiveParts.includes(fakeRaw)) fakeRaw = allDirs[Math.floor(Math.random() * allDirs.length)];
+            newQuestion = `Is ${items[idxB]} ${getTerm(fakeRaw)} ${items[idxA]}?`;
+            newAnswer = false;
         }
       }
     }
@@ -595,25 +648,27 @@ export default function RftArchitect() {
     }
     setCipherHasChanged(roundCipherChanged);
 
-    const logicData = generateLogic(nextMode, settings.numPremises, roundCipherMap);
+    // DETERMINE NIGHT MODE HERE (Before logic gen)
+    let isNight = false;
+    if (settings.enableTransformation) {
+       isNight = Math.random() > 0.5;
+    }
+    setContextIsNight(isNight);
+
+    // PASS isNight TO LOGIC GENERATOR
+    const logicData = generateLogic(nextMode, settings.numPremises, roundCipherMap, isNight);
+    
     setActiveCipherKeys(logicData.usedCipherKeys);
     setPremises(logicData.premises);
     setCurrentQuestion(logicData.question);
     setCurrentVisualMap(logicData.visualMap);
 
-    expectedAnswerRef.current = logicData.answer;
+    expectedAnswerRef.current = logicData.answer; // NO EXTRA FLIP HERE
+    
     let mods = [...logicData.modifiers];
     if (roundCipherChanged) mods.push("KEY_CHANGE");
+    if (isNight) mods.push("TRANSFORM");
 
-    let isNight = false;
-    if (settings.enableTransformation) {
-      mods.push("TRANSFORM");
-      isNight = Math.random() > 0.5;
-      setContextIsNight(isNight);
-      if (isNight) expectedAnswerRef.current = !expectedAnswerRef.current;
-    } else {
-      setContextIsNight(false);
-    }
     setActiveModifiers(mods);
     setIsYesRight(Math.random() > 0.5);
     setQuestionSecondsRemaining(settings.questionTimeLimit);
@@ -881,8 +936,23 @@ export default function RftArchitect() {
                     {phase === "PREMISE_MEMORIZE" && (
                         <div className="w-full max-w-lg space-y-6 animate-in slide-in-from-bottom-4">
                             {cipherHasChanged && <div className="text-white font-bold p-2 bg-red-500/80 rounded animate-pulse">⚠️ CIPHER KEY CHANGED</div>}
-                            <div className="inline-block px-3 py-1 rounded bg-slate-800 text-xs font-mono text-cyan-400 uppercase tracking-widest mb-4">{currentRoundMode.replace("_", " ")}</div>
-                            <div className="space-y-4 text-center bg-slate-800/50 p-6 rounded-xl border border-slate-700">
+                            
+                            <div className="flex justify-between items-end">
+                                <div className="inline-block px-3 py-1 rounded bg-slate-800 text-xs font-mono text-cyan-400 uppercase tracking-widest">{currentRoundMode.replace("_", " ")}</div>
+                                {/* Visual Indicator for Memorize Phase */}
+                                {settings.enableTransformation && (
+                                    <span className={`px-2 py-0.5 rounded border text-[10px] font-bold uppercase ${contextIsNight ? 'bg-indigo-500/20 text-indigo-400 border-indigo-900' : 'bg-amber-500/20 text-amber-400 border-amber-900'}`}>
+                                        {contextIsNight ? "🌙 INVERT ACTIVE" : "☀ STANDARD MODE"}
+                                    </span>
+                                )}
+                            </div>
+
+                            {/* Premise Box - Blue tint if Night/Invert */}
+                            <div className={`space-y-4 text-center p-6 rounded-xl border transition-all duration-500 ${
+                                contextIsNight 
+                                ? "bg-indigo-500/10 border-indigo-500/50 shadow-[0_0_30px_rgba(99,102,241,0.15)]" 
+                                : "bg-slate-800/50 border-slate-700"
+                            }`}>
                                 {premises.map((p, i) => (
                                     <div key={i} className="text-lg md:text-2xl font-medium leading-relaxed" dangerouslySetInnerHTML={{ __html: p }} />
                                 ))}
@@ -894,9 +964,13 @@ export default function RftArchitect() {
                     {/* QUESTION */}
                     {phase === "QUESTION" && (
                         <div className="w-full h-full flex flex-col">
-                            {/* Premises (Visible if not blind) */}
+                            {/* Premises (Visible if not blind) - Styles match Inversion State */}
                             {!settings.blindMode && (
-                                <div className="p-3 md:p-4 bg-slate-800/30 rounded-lg text-center text-sm md:text-base text-slate-300 mb-4 md:mb-8 border border-slate-700/50">
+                                <div className={`p-3 md:p-4 rounded-lg text-center text-sm md:text-base text-slate-300 mb-4 md:mb-8 border transition-colors duration-500 ${
+                                    contextIsNight 
+                                    ? "bg-indigo-500/10 border-indigo-500/50 shadow-[0_0_20px_rgba(99,102,241,0.15)]" 
+                                    : "bg-slate-800/30 border-slate-700/50"
+                                }`}>
                                     {premises.map((p, i) => <div key={i} className="mb-2 last:mb-0" dangerouslySetInnerHTML={{ __html: p }} />)}
                                 </div>
                             )}
