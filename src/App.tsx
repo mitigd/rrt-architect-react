@@ -533,8 +533,8 @@ export default function RftArchitect() {
         if (diffY > 0) parts.push("NORTH"); else if (diffY < 0) parts.push("SOUTH");
         if (diffX > 0) parts.push("EAST"); else if (diffX < 0) parts.push("WEST");
         
-        let rawTrueRel = "SAME LOCATION";
-        if (parts.length > 0) rawTrueRel = parts.join(" and ");
+        //let rawTrueRel = "SAME LOCATION";
+        //if (parts.length > 0) rawTrueRel = parts.join(" and ");
 
         // --- SPATIAL INVERSION FIX ---
         // If night, we act as if the object is in the opposite direction
@@ -1092,7 +1092,7 @@ export default function RftArchitect() {
                                                                         style={{ overflow: 'visible' }}
                                                                     >
                                                                         <div 
-                                                                            xmlns="http://www.w3.org/1999/xhtml" 
+                                                                            {...({ xmlns: "http://www.w3.org/1999/xhtml" } as any)}
                                                                             className="w-full h-full flex items-center justify-center scale-125 text-white"
                                                                             dangerouslySetInnerHTML={{ __html: node.label }}
                                                                         />
